@@ -1,145 +1,141 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import Card from '../UI/Card/Card';
 import classes from './Login.module.css';
 import Button from '../UI/Button/Button';
 
-/**
- * * Breif Understanding of useEffect
- * * From the Below code - as i added few console's in between the code.
- * * We can understand Behaviour of useEffect with console in browser : as follow -
- * ! When we refresh the page i.e., app render very first time 
- * ? Console :: 
- * * 1 - Component Rendered..!
- * * 2 - EFFECT 1 RUNNING
- * * 3 - EFFECT 2 RUNNING
- * * 4 - Checking Validity..!
- * * As state value is not updated/ changed, hence component not rendered again.
- * 
- * ! When i entered an word into the input
- * ? Console :: 
- * * 1 - Component Rendered..!
- * * 2 - Clean Up Called
- * * 3 - EFFECT 1 RUNNING
- * * 4 - EFFECT 2 RUNNING
- * * 5 - Checking Validity..!
- * * ? - Component Rendered..!
- */
+const emailReducer = (state, action) => {
+    if(action.type === 'change'){
+        return {value: action.value, isValid: action.value.includes('@')}
+    }
+    if(action.type === 'blur'){
+        return {value: state.value, isValid: state.value.includes('@')}
+    }
+    return {value: '', isValid: false}
+}
+const passwordReducer = (state, action) => {
+    if(action.type === 'change'){
+        return {value: action.value, isValid: action.value.length > 6}
+    }
+    if(action.type === 'blur'){
+        return {value: state.value, isValid: state.value.length > 6}
+    }
+    return {value: '', isValid: false}
+}
 
 
 const Login = (props) => {
-  const [enteredEmail,    setEnteredEmail]    = useState('');
-  const [emailIsValid,    setEmailIsValid]    = useState();
-  const [enteredPassword, setEnteredPassword] = useState('');
-  const [passwordIsValid, setPasswordIsValid] = useState();
-  const [formIsValid,     setFormIsValid]     = useState(false);
+    const initInputState = ({
+        value: '', 
+        isValid : null,
+    });
+    const [emailState, dispatchEmail] = useReducer(emailReducer, initInputState);
+    const [passwordState, dispatchPassword] = useReducer(passwordReducer, initInputState);
 
-  /**
-   * * This useEffect will run on every rendering of the component ,as we've not added second parameter to the useEffect.
-   */
-  useEffect( () => {
-    console.log("EFFECT 1 RUNNING");
-  });
+    // const [enteredEmail, setEnteredEmail] = useState('');
+    // const [isEnteredEmailValid, setIsEnteredEmailValid] = useState();
 
-  useEffect( () => {
-    const identifier = setTimeout( () => {
-      console.log("EFFECT 2 RUNNING");
-      console.log('Checking Validity..!');
-      setFormIsValid(enteredEmail.includes('@') && enteredPassword.trim().length > 6);
-      console.log('validated..!')
-    }, 500);
+    // const [enteredPassword, setEnteredPassword] = useState('');
+    // const [isEnteredPasswordValid, setIsEnteredPasswordValid] = useState();
+
+    const [isFormvalid, setIsFormvalid] = useState(null);
+
+    // Used Object Destructuring
+    const {isvalid: isEmailValid} = emailState;
+    const {isvalid: isPasswordValid} = passwordState;
 
     /**
-     * * It's an clean up function.
-     * * It will never run when component render at very first time.
-     * * If any of the dependancies changed, clean up function will run first then only, useEffect code will go for run.
-     * * on every re-rendering of component, clean up function will get run first and then useEffect code.
+     * Here the reason behind using useEffect is ,
+     * When we are updating the state depending on some other state, it will create a conflict with useState because, we dont know that , the state value on which we are dependent to update state is correct or not OR its an exact state value.
+     * useEffect will work here.. Because useEffect will always run after component renders/ re-renders.
      */
-    return () => { // Clean up function.
-      console.log('Clean Up Called');
-      clearTimeout(identifier);
+    useEffect( () => {
+        const identifier = setTimeout( () => {
+            setIsFormvalid(isEmailValid && isPasswordValid);
+        }, 500);
+        return () => {
+            clearTimeout(identifier);
+        }
+    }, [isEmailValid,isPasswordValid]);
+
+    const emailChangeHandler = (e) => {
+        dispatchEmail({
+            value : e.target.value,
+            type  : e.type
+        });
+        // setEnteredEmail(e.target.value);
+        // setIsFormvalid(e.target.value.includes('@') && enteredPassword.length > 6);
+        /**
+         * This way of updating the state depends on the another state may result in invalid values. 
+         * This will work in normal way, but in some cases or complex cases, it will result in invalid state value.
+         * so here we can use 'useEffect' function to update the state depending on some another state because , useEffect function will always run after component re-rendered.
+         */
+
     }
-  }, [enteredEmail, enteredPassword]);
-  /**
-   * * After component re-rendered, if certain dependancy changed, then useEffect will run again. i.e.,
-   * * in the abve example, on the very first time, useEffect code will run . after that, on user enter emailid/password, emailChangeHandler function call the setEnteredEmail state updating function, so component re-renders. 
-   * * AFTER RE_RENDERED, IF any of the given dependancy changed, then useEffect will run again.
-   * * --React re-renders as states change.
-   */
-
-  const emailChangeHandler = (event) => {
-    setEnteredEmail(event.target.value);
-    /*
-    setFormIsValid(
-      event.target.value.includes('@') && enteredPassword.trim().length > 6
-    ); 
-    */
-  };
-
-  const passwordChangeHandler = (event) => {
-    setEnteredPassword(event.target.value);
-    /*
-    setFormIsValid(
-      event.target.value.trim().length > 6 && enteredEmail.includes('@')
-    );
-    */
-  };
-
-  const validateEmailHandler = () => {
-    setEmailIsValid(enteredEmail.includes('@'));
-  };
-
-  const validatePasswordHandler = () => {
-    setPasswordIsValid(enteredPassword.trim().length > 6);
-  };
-
-  const submitHandler = (event) => {
-    event.preventDefault();
-    props.onLogin(enteredEmail, enteredPassword);
-  };
-
-  console.log('Component Rendered..!');
-
-  return (
-    <Card className={classes.login}>
-      <form onSubmit={submitHandler}>
-        <div
-          className={`${classes.control} ${
-            emailIsValid === false ? classes.invalid : ''
-          }`}
-        >
-          <label htmlFor="email">E-Mail</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={enteredEmail}
-            onChange={emailChangeHandler}
-            onBlur={validateEmailHandler} 
-          />
-        </div>
-        <div
-          className={`${classes.control} ${
-            passwordIsValid === false ? classes.invalid : ''
-          }`}
-        >
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={enteredPassword}
-            onChange={passwordChangeHandler}
-            onBlur={validatePasswordHandler}
-          />
-        </div>
-        <div className={classes.actions}>
-          <Button type="submit" className={classes.btn} disabled={!formIsValid}>
-            Login
-          </Button>
-        </div>
-      </form>
+    const passwordChangeHandler = (e) => {
+        dispatchPassword({
+            value: e.target.value,
+            type : e.type
+        })
+        // setEnteredPassword(e.target.value);
+        // setIsFormvalid( enteredEmail.includes('@') && e.target.value.length > 6 );
+    }
+    const validateEmailHandler = (e) => {
+        dispatchEmail({
+            type  : e.type
+        });
+        // setIsEnteredEmailValid(emailState.isValid);
+    }
+    const validatePasswordHandler = (e) => {
+        dispatchPassword({
+            type : e.type
+        })
+        // setIsEnteredPasswordValid(enteredPassword.length > 6);
+    }
+    const submitHandler = (e) => {
+        e.preventDefault();
+        props.onLogin(emailState.value,passwordState.value);
+    }
+    return(
+        <Card className={classes.login} >
+        <form onSubmit={submitHandler}>
+            <div
+            className={`${classes.control} ${
+                emailState.isValid === false ? classes.invalid : ''
+            }`}
+            >
+            <label htmlFor="email">E-Mail</label>
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value={emailState.value}
+                onChange={emailChangeHandler}
+                onBlur={validateEmailHandler} 
+            />
+            </div>
+            <div
+            className={`${classes.control} ${
+                passwordState.isValid === false ? classes.invalid : ''
+            }`}
+            >
+            <label htmlFor="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                name="password"
+                value={passwordState.value}
+                onChange={passwordChangeHandler}
+                onBlur={validatePasswordHandler}
+            />
+            </div>
+            <div className={classes.actions}>
+            <Button type="submit" className={classes.btn} disabled={!isFormvalid}>
+                Login
+            </Button>
+            </div>
+        </form>
     </Card>
-  );
-};
+    )
+}
 
 export default Login;
