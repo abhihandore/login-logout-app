@@ -15,5 +15,23 @@
     But here the scenario is different, we are updating the state depending on the other state. It works fine but in some cases, depending on how react schedule the state update, it may fail to give latest state value.
 
     Hence Here useReducer came into the picture.
+
+ * * React Context 
+ * * Component-wide, "Behind-the-scene" State Management.
+ * ! Limitations of the useContext : 
+ * - React context is NOT Optimized for high frequency changes..! 
+ * For e.g, if you have a state changes every second or multiple time per second.
+ * - React also should not be used to replace ALL component communications and props.
  * 
+ * * Rules of the Hooks : 
+ * * We should call react hooks in React Function - i.e., React component function and Custom hooks.
+ * * We should only call hooks at the TOP Level-{
+ *    ! Dont call them in a nested functions.
+ *    ! Dont call them in any block statement like if else etc.
+ *  * Extra unofficial rule for useEffect -> ALWAYS add everything you refer to inside of useEffect() as a dependency. 
+ * * }
+ * 
+ * * useRef() 
+ * 
+ * * ref attribute should not be assign to the react component.
  */
